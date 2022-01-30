@@ -20,9 +20,9 @@ function preload() {
     game.load.image('diamond', './assets/diamond.png')
     game.load.spritesheet('woof', './assets/woof.png', 32, 32)
     game.load.spritesheet('enemy', 'assets/enemy.png', 32, 48)
-    game.load.image('green-bar', './assets/health_green.png');
-    game.load.image('red-bar', './assets/health_reg.png');
-
+    game.load.image('green-bar', './assets/health_green.png')
+    game.load.image('red-bar', './assets/health_reg.png')
+    game.load.image('obstacle', './assets/pineapple.png')
 }
 
 function create() {
@@ -39,7 +39,7 @@ function create() {
     const ground = platforms.create(0, game.world.height - 64, 'ground')
         // ENEMIES
     for (var i = 0; i < 5; i++) {
-        var enemy = enemiesGroup.create((i + 2) * 500, game.world.height - 150, 'enemy');
+        var enemy = enemiesGroup.create((i + 2) * 100, 0, 'enemy');
         game.physics.arcade.enable(enemy)
         enemy.body.bounce.y = 0.2
         enemy.body.gravity.y = 800
@@ -48,8 +48,8 @@ function create() {
 
         enemy.animations.add('left', [0, 1, 2, 3], 10, true)
         enemy.animations.add('right', [5, 6, 7, 8], 10, true)
-        enemy.body.velocity.x = Math.random() * 50 + 100; // between 100-150
-        if (Math.random() < 0.5) enemy.body.velocity.x *= -1; // reverse direction
+        enemy.body.velocity.x = Math.random() * 100 + 400;
+        if (i % 2 == 0) enemy.body.velocity.x *= -1;
     }
     ground.scale.setTo(10, 2);
 
@@ -86,10 +86,19 @@ function create() {
     player.animations.add('left', [0, 1], 10, true)
     player.animations.add('right', [2, 3], 10, true)
 
+    obstacles = game.add.group()
+    obstacles.enableBody = true
+    for (var i = 0; i < 5; i++) {
+        const obstacle = obstacles.create((i + 2) * 230, 0, 'obstacle')
+        obstacle.body.gravity.y = 1000
+        obstacle.scale.setTo(1.3)
+        obstacle.body.bounce.y = 0.3 + Math.random() * 0.2
+    }
+
     diamonds = game.add.group()
     diamonds.enableBody = true
     for (var i = 0; i < 120; i++) {
-        const diamond = diamonds.create(i * 70, 0, 'diamond')
+        const diamond = diamonds.create((i + 1) * 80, 0, 'diamond')
         diamond.body.gravity.y = 1000
         diamond.body.bounce.y = 0.3 + Math.random() * 0.2
     }
@@ -100,7 +109,7 @@ function create() {
     healthBar = game.add.image(350, 20, 'green-bar');
     healthBar.fixedToCamera = true;
 
-    healthLabel = game.add.text(250, 20, 'Lifes', { fontSize: '20px', fill: '#ffffff' });
+    healthLabel = game.add.text(250, 20, 'Health', { fontSize: '20px', fill: '#ffffff' });
     healthLabel.fixedToCamera = true;
     scoreText = game.add.text(16, 16, '', { fontSize: '32px', fill: '#fff' })
     scoreText.fixedToCamera = true
@@ -113,19 +122,24 @@ function update() {
 
     game.physics.arcade.collide(player, platforms)
     game.physics.arcade.collide(diamonds, platforms)
+    game.physics.arcade.collide(obstacles, platforms)
+
 
     game.physics.arcade.overlap(player, diamonds, collectDiamond, null, this)
-    game.physics.arcade.overlap(player, enemiesGroup, touchEnemy, null, this);
+    game.physics.arcade.overlap(player, enemiesGroup, touchEnemy, null, this)
+    game.physics.arcade.overlap(player, obstacles, touchObstacle, null, this)
 
     enemiesGroup.forEach(function(enemy) {
         game.physics.arcade.collide(enemy, platforms)
+
         if (enemy.body.velocity.x < 0) {
             enemy.animations.play('left')
-            enemy.body.velocity.x = -150;
+            enemy.body.velocity.x = -100;
         } else {
             enemy.animations.play('right');
-            enemy.body.velocity.x = 150;
+            enemy.body.velocity.x = 100;
         }
+
     });
     if (cursors.left.isDown) {
         player.body.velocity.x = -150
@@ -140,17 +154,23 @@ function update() {
     if (cursors.up.isDown && player.body.touching.down) {
         player.body.velocity.y = -400
     }
+
     if (score === 300) {
         alert('You win!')
         score = 0
         game.state.restart();
-
     }
     if (player.health == 0) {
         alert('Game over.')
         game.state.restart()
     }
+
 }
+
+// function reverse(enemy) {
+//     enemy.animations.play('left')
+        //     enemy.body.velocity.x = -100;
+// }
 
 function collectDiamond(player, diamond) {
     diamond.kill()
@@ -159,14 +179,18 @@ function collectDiamond(player, diamond) {
 }
 
 function touchEnemy(player, enemy) {
-    enemy.body.velocity.x *= -1;
-    player.damage(30)
-    healthBar.scale.setTo(player.health / player.maxHealth, 1);
+    if (player.body.velocity.y > 0 || enemy.body.blocked.up) {
+        enemy.kill()
+        score += 15
+        scoreText.text = 'Score: ' + score
+    } else {
+        enemy.body.velocity.x *= -1;
+        player.damage(30)
+        healthBar.scale.setTo(player.health / player.maxHealth, 1);
+    }
 }
 
-function patrolPlatform(enemy, platform) {
-    if (enemy.body.velocity.x > 0 && enemy.right > platform.right ||
-        enemy.body.velocity.x < 0 && enemy.left < platform.left) {
-        enemy.body.velocity.x *= -1;
-    }
+function touchObstacle(player, obstacle) {
+    player.damage(5)
+    healthBar.scale.setTo(player.health / player.maxHealth, 1);
 }
