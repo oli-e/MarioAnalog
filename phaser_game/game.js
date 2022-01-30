@@ -64,11 +64,11 @@ function create() {
 
     ledge = platforms.create(1370, 400, 'ground')
     ledge.body.immovable = true
-    ledge = platforms.create(780, 250, 'ground')
+    ledge = platforms.create(780, 255, 'ground')
     ledge.body.immovable = true
     ledge.scale.setTo(0.3, 1);
 
-    ledge = platforms.create(650, 350, 'ground')
+    ledge = platforms.create(650, 355, 'ground')
     ledge.body.immovable = true
     ledge = platforms.create(1000, 200, 'ground')
     ledge.body.immovable = true
